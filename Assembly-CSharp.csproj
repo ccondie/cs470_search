@@ -6,7 +6,7 @@
     <ProductVersion>10.0.20506</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <RootNamespace></RootNamespace>
-    <ProjectGuid>{391CA6D2-0669-58F9-9E94-5DECDF2040E4}</ProjectGuid>
+    <ProjectGuid>{F1A98DE0-9772-009A-E7AB-5EC4E894F5E8}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>Assembly-CSharp</AssemblyName>
@@ -46,6 +46,10 @@
   </ItemGroup>
   <ItemGroup>
      <Compile Include="Assets\Field.cs" />
+     <Compile Include="Assets\Ground.cs" />
+     <Compile Include="Assets\NodeSquare.cs" />
+     <Compile Include="Assets\ObjectBuilderEditor.cs" />
+     <Compile Include="Assets\ObjectBuilderScript.cs" />
      <Compile Include="Assets\ObjectFollow.cs" />
      <Compile Include="Assets\RobotController.cs" />
      <Compile Include="Assets\SubField.cs" />
