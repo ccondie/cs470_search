@@ -6,6 +6,7 @@ public class RobotController : MonoBehaviour {
 
 	public float speed;
 	public float def_speed = 50;
+	public NodeSquare[,] nodes;
 
 	//Used to keep track of "forward direction" in manual control
 	float rotationAngle = 0;
@@ -18,29 +19,13 @@ public class RobotController : MonoBehaviour {
 	List<Field> att_fields = new List<Field>();
 	List<Field> rep_fields = new List<Field> ();
 
+	List<NodeSquare> path = new List<NodeSquare> ();
+
 	// Use this for initialization
 	void Start () {
 		followArrow = GameObject.FindObjectOfType<ObjectFollow> ().gameObject;
-		att_fields = getFieldofType (1);
-		rep_fields = getFieldofType (2);
-		rand_fields = getFieldofType (3);
-
-		foreach (Field rand_field in rand_fields) {
-			float field_radius = rand_field.getRadius ();
-			float dist_from_center = Mathf.Sqrt (field_radius * field_radius / 2);
-			for (float x = -dist_from_center; x < dist_from_center; x += 7) {
-				for (float y = -dist_from_center; y < dist_from_center; y += 7) {
-
-					// seed the random field with random vectors
-					Vector3 location = new Vector3(rand_field.getLocation().x + x, 0, rand_field.getLocation().y + y);
-					float vec_x = Random.Range (-1, 1);
-					float vec_y = Random.Range (-1, 1);
-					Vector3 vector = new Vector3 (vec_x, 0, vec_y);
-
-					rand_field.sub_fields.Add (new SubField (location, vector));
-				}
-			}
-		}
+		nodes = ObjectBuilderScript.nodes;
+		path = a_star (null, nodes [25, 5]);
 
 	}
 
@@ -55,82 +40,127 @@ public class RobotController : MonoBehaviour {
 	
 		//Alter the toMove variable here based on the varius fields in the scene.
 		//You can set the runtype in Unity in the Inspector Window
-		switch (runtype) {
-		case RunType.one:
-			//For Part 1 of the lab
-			Vector3 my_pos = myLocation ();
-
-			Field goal = att_fields [0];
-			Vector3 goal_pos = goal.getLocation ();
-			float goal_dist = getDistance (goal);
-
-			float exp_shift = (float)1.3;
-			float goal_scalar = (float)1 + (1 / (goal_dist - exp_shift));
-			goal_scalar = 1;
-
-			Vector3 move_force = goal_scalar * ((goal_pos - my_pos) / vec_length (goal_pos - my_pos));
-
-			// counter the robot's velocity based on how close to the goal it is
-			float counter_speed_radius = goal.getRadius () * (float)0.1;
-			if (goal_dist < goal.getRadius ()) {
-				move_force = move_force - (counter_speed_radius / goal_dist) * myVelocity ();
-			}
 
 
-			// apply the influence of the repulsive fields, by unit vector and scalar
-			for (int i = 0; i < rep_fields.Count; i++) {
-				Field cur_rep = rep_fields [i];
-				Vector3 cur_pos = cur_rep.getLocation ();
-				float cur_dist = getDistance (cur_rep);
-				float cur_scalar = 0;
+		//calculate path
 
-				if (cur_dist < cur_rep.getRadius ()) {
-					cur_scalar = Mathf.Abs ((1 / (float)Mathf.Pow ((cur_dist - exp_shift), (float)1.2)));
-				} else {
-					speed = def_speed;
-					cur_scalar = 0;
-				}
-
-				if (cur_dist < cur_rep.getRadius () * (float)0.45) {
-					speed = (cur_scalar * 25);
-				}
-
-				move_force += cur_scalar * ((my_pos - cur_pos) / vec_length (my_pos - cur_pos));
-			}
-
-			// handle the influence of a random fields
-			int rand_vector_sample = 2;
-			foreach (Field rand_field in rand_fields) {
-				if (getDistance (rand_field) < rand_field.getRadius ()) {
-					List<Vector3> influences = closest_sub_fields (rand_field.sub_fields, rand_vector_sample);
-					foreach (Vector3 push in influences) {
-						move_force += move_force + (float)0.5 * push;
-					}
-				}
-			}
-				
-			move (move_force);
-
-
-			break;
-		case RunType.two:
-			//For Part 2 of the lab
-			//	readSonars ();
-			break;
-
-		case RunType.three:
-			//For whatever else
-			//feel free to add more 
-
-			break;
-
-		}
 
 	
 		move (toMove);
 
 
 	}
+
+
+	public List<NodeSquare> reconstruct_path(Dictionary<NodeSquare, NodeSquare> cameFrom, NodeSquare current){
+		List<NodeSquare> total_path = new List<NodeSquare>();
+		total_path.Add(current);
+
+		while(cameFrom.ContainsKey(current)){
+			current = cameFrom [current];
+			total_path.Add (current);
+		}
+
+		return total_path;
+	}
+
+
+	public List<NodeSquare> adjacent(NodeSquare current){
+		List<NodeSquare> adj = new List<NodeSquare>();
+		int x = current.getLoc().x;
+		int z = current.getLoc().z;
+
+		int max_x = nodes.GetLength(0);
+		int max_z = nodes.GetLength(1);
+
+		if (x-1 >= 0 && z-1 >= 0)
+			adj.Add(nodes[x-1][z-1]);
+
+		if (z-1 >= 0)
+			adj.Add(nodes[x][z-1]);
+
+		if (x+1 <= max_x && z-1 >= 0) 
+			adj.Add(nodes[x+1][z-1]);
+			
+		if (x-1 >= 0)
+			adj.Add(nodes[x-1][z]);
+			
+		if (x+1 <= max_x) 
+			adj.Add(nodes[x+1][z]);
+			
+		if (x-1 >= 0 && z+1 <= max_z) 
+			adj.Add(nodes[x-1][z+1]);
+			
+		if (z+1 <= max_z) 
+			adj.Add(nodes[x][z+1]);
+			
+		if (x+1 <= max_x && z+1 <= max_z) 
+			adj.Add(nodes[x+1][z+1]);
+
+		return adj;
+	}
+
+	public float heuristic_cost_estimate(NodeSquare start, NodeSquare goal){
+		float distance = Mathf.Sqrt (Mathf.Pow (goal.getLoc ().x - start.getLoc ().x, 2) + Mathf.Pow (goal.getLoc ().z - start.getLoc ().z), 2);
+		return distance;
+	}
+
+	public NodeSquare getLowest(Dictionary<NodeSquare, float> fScore){
+		NodeSquare lowest = fScore.Keys [0];
+		foreach (NodeSquare key in fScore.Keys) {
+			if (fScore [key] < fScore [lowest]) {
+				lowest = key;
+			}
+		}
+		return lowest;
+	}
+
+	public List<NodeSquare> a_star(NodeSquare start, NodeSquare goal){
+		List<NodeSquare> closedSet = new List<NodeSquare> ();
+		List<NodeSquare> openSet = new List<NodeSquare> ();
+		openSet.Add (start);
+		Dictionary<NodeSquare, NodeSquare> cameFrom = new Dictionary<NodeSquare, NodeSquare> ();
+
+		Dictionary<NodeSquare, float> gScore = new Dictionary<NodeSquare, float> ();
+		Dictionary<NodeSquare, float> fScore = new Dictionary<NodeSquare, float> ();
+
+		foreach (NodeSquare[] row in nodes) {
+			foreach (NodeSquare node in row) {
+				gScore.Add (node, float.MaxValue);
+				fScore.Add (node, float.MaxValue);
+			}
+		}
+		gScore [start] = 0;
+		fScore [start] = heuristic_cost_estimate (start, goal);
+
+		while (openSet.Count > 0) {
+			NodeSquare current = getLowest (fScore);
+			if (current.Equals(goal)) {
+				return reconstruct_path (cameFrom, current);
+			}
+
+			openSet.Remove (current);
+			closedSet.Add (current);
+			foreach (NodeSquare neighbor in adjacent(current)) {
+				if (closedSet.Contains (neighbor)) {
+					continue;
+				}
+
+				float tentative_gScore = gScore [current] + 1;
+				if (!openSet.Contains (neighbor)) {
+					openSet.Add (neighbor);
+				} else if (tentative_gScore >= gScore [neighbor])
+					continue;
+
+				cameFrom.Add (neighbor, current);
+				gScore [neighbor] = tentative_gScore;
+				fScore [neighbor] = gScore [neighbor] + heuristic_cost_estimate (neighbor, goal);
+			}
+		}
+		return null;
+	}
+
+
 
 	public List<Vector3> closest_sub_fields(List<SubField> subs, int sampleSize){
 		SortedDictionary<float, SubField> distances = new SortedDictionary<float, SubField> ();

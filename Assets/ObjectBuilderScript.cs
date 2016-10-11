@@ -5,13 +5,9 @@ using System.Collections;
 public class ObjectBuilderScript : MonoBehaviour 
 {
 
-
 	bool beenBuilt;
 	//Your grid stuff
-	NodeSquare[,] nodes;
-
-
-
+	public static NodeSquare[,] nodes;
 
 	//this gets called when you press the button in the unity inspector
 	public void BuildObject()	{
@@ -22,12 +18,19 @@ public class ObjectBuilderScript : MonoBehaviour
 		Vector3 ground_pos = ground.transform.position;
 		Vector3 ground_scale = ground.transform.localScale;
 
-		nodes = new NodeSquare[(int)ground_scale.x, (int)ground_scale.y];
-		for (int y = 0; y < (int)ground_scale.y; y++) {
-			for(int x = 0; x < (int)ground_scale.x; x++){
-				nodes [x, y] = new NodeSquare (new Vector3 (x, 0, y));
+		Debug.Log (ground_scale.z);
+
+		nodes = new NodeSquare[(int)(ground_scale.x), (int)(ground_scale.z)];
+		float start_x = -(ground_scale.x / 2) + (float)(.5);
+		float start_z = -(ground_scale.z / 2) + (float)(.5);
+
+		for (int z = 0; z < (int)ground_scale.z; z += 1) {
+			for(int x = 0; x < (int)ground_scale.x; x += 1){
+				nodes [x, z] = new NodeSquare (new Vector3 (start_x + x, 0.7F, start_z + z));
 			}
 		}
+
+		Debug.Log ("Completed BuildObject");
 	}
 
 
@@ -38,9 +41,12 @@ public class ObjectBuilderScript : MonoBehaviour
 			// Do a double for loop and draw all of your nodes in your grid
 
 			//Gizmos.DrawWireSphere (nodes[i, j].position, .5f);
-			for (int y = 0; y < nodes.GetLength(1); y++) {
+			for (int z = 0; z < nodes.GetLength(1); z++) {
 				for (int x = 0; x < nodes.GetLength (0); x++) {
-					Gizmos.DrawWireCube (nodes [x, y].getLoc (), new Vector3 (1, 1, 1));
+					Gizmos.color = new Color (1.0F, 0.0F, 0.0F, 0.0F);
+					Gizmos.DrawCube (nodes [x, z].getLoc (), new Vector3 (1, 0.3F, 1));
+					Gizmos.color = new Color (0.0F, 0.0F, 0.0F, 0.2F);
+					Gizmos.DrawWireCube (nodes [x, z].getLoc (), new Vector3 (1, 0.3F, 1));
 				}
 			}
 
