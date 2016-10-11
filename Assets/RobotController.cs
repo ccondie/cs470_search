@@ -15,14 +15,16 @@ public class RobotController : MonoBehaviour {
 	public RunType runtype; 
 	public enum RunType{one, two, three};
 
-	List<Field> rand_fields = new List<Field>();
 	List<Field> att_fields = new List<Field>();
-	List<Field> rep_fields = new List<Field> ();
 
 	List<NodeSquare> path = new List<NodeSquare> ();
+	Field follow_me;
 
 	// Use this for initialization
 	void Start () {
+
+		att_fields = getFieldofType (1);
+		follow_me = att_fields [0];
 
 		ObjectBuilderScript script = GameObject.FindObjectOfType<ObjectBuilderScript>();
 		script.BuildObject ();
@@ -37,19 +39,13 @@ public class RobotController : MonoBehaviour {
 		NodeSquare start = new NodeSquare(new Vector3(0,0,0), new Vector3(0,0,0));
 		NodeSquare goal = new NodeSquare(new Vector3(0,0,0), new Vector3(0,0,0));
 
-		Debug.Log ("Pre-Calculations");
-		Debug.Log (roboLoc);
-		Debug.Log (goalLoc);
-
 		foreach (NodeSquare node in nodes) {
 			if (Vector3.Distance (node.getRenderLoc(), roboLoc) < startDist) {
-				Debug.Log ("Reassign A");
 				start = node;
 				startDist = Vector3.Distance (node.getRenderLoc (), roboLoc);
 			}
 
 			if (Vector3.Distance (node.getRenderLoc (), goalLoc) < goalDist) {
-				Debug.Log ("Reassign B");
 				goal = node;
 				goalDist = Vector3.Distance (node.getRenderLoc (), goalLoc);
 			}
@@ -70,6 +66,7 @@ public class RobotController : MonoBehaviour {
 		foreach (NodeSquare node in path) {
 			node.makePath ();
 		}
+		path.Reverse ();
 	}
 
 
@@ -79,15 +76,33 @@ public class RobotController : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 
+		// update the location of the attractive field
+		Vector3 my_pos = myLocation ();
 		Vector3 toMove = getManualInput ();
 	
-		//Alter the toMove variable here based on the varius fields in the scene.
-		//You can set the runtype in Unity in the Inspector Window
+		follow_me.transform.position = path [0].getRenderLoc ();
+		float goal_dist = Vector3.Distance(follow_me.transform.position, myLocation());
 
+		float exp_shift = (float)1.3;
+		float goal_scalar = (float)1 + (1 / (goal_dist - exp_shift));
+		goal_scalar = 1;
 
-		//calculate path
+		Vector3 move_force = goal_scalar * ((follow_me.transform.position - my_pos) / vec_length (follow_me.transform.position - my_pos));
 
+		// counter the robot's velocity based on how close to the goal it is
+		float counter_speed_radius = follow_me.getRadius () * (float)0.7;
 
+		Debug.Log (goal_dist);
+		if (goal_dist < follow_me.getRadius ()) {
+			if (goal_dist < (follow_me.getRadius () / 2) && (path.Count > 1)) {
+				path [0].unmakePath ();
+				path.RemoveAt (0);
+			} else {
+				move_force = move_force - (counter_speed_radius / goal_dist) * myVelocity ();
+			}
+		}
+			
+		move (move_force);
 	
 		move (toMove);
 

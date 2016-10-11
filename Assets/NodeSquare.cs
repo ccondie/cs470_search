@@ -48,4 +48,8 @@ public class NodeSquare {
 	public void makePath(){
 		isPath = true;
 	}
+
+	public void unmakePath(){
+		isPath = false;
+	}
 }
