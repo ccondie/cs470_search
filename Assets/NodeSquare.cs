@@ -4,10 +4,13 @@ using System.Collections;
 public class NodeSquare {
 
 	public Vector3 location;
+	public Vector3 node_location;
+
 	public bool isRobot = false;
 
-	public NodeSquare(Vector3 _location){
+	public NodeSquare(Vector3 _location, Vector3 _node_location){
 		location = _location;
+		node_location = _node_location;
 	}
 
 	// Use this for initialization
@@ -21,6 +24,10 @@ public class NodeSquare {
 	}
 
 	public Vector3 getLoc(){
+		return node_location;
+	}
+
+	public Vector3 getRenderLoc(){
 		return location;
 	}
 

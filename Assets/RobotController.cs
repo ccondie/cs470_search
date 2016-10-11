@@ -23,10 +23,19 @@ public class RobotController : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
+
+		ObjectBuilderScript script = GameObject.FindObjectOfType<ObjectBuilderScript>();
+		script.BuildObject ();
+
 		followArrow = GameObject.FindObjectOfType<ObjectFollow> ().gameObject;
 		nodes = ObjectBuilderScript.nodes;
-		path = a_star (null, nodes [25, 5]);
 
+		//List<NodeSquare> result = adjacent (nodes [0, 0]);
+		//foreach (NodeSquare node in result) {
+		//	node.makeRobot ();
+		//}
+
+		path = a_star (nodes[0,0] , nodes [49,39]);
 	}
 
 
@@ -56,6 +65,8 @@ public class RobotController : MonoBehaviour {
 		List<NodeSquare> total_path = new List<NodeSquare>();
 		total_path.Add(current);
 
+		return null;
+
 		while(cameFrom.ContainsKey(current)){
 			current = cameFrom [current];
 			total_path.Add (current);
@@ -67,47 +78,55 @@ public class RobotController : MonoBehaviour {
 
 	public List<NodeSquare> adjacent(NodeSquare current){
 		List<NodeSquare> adj = new List<NodeSquare>();
-		int x = current.getLoc().x;
-		int z = current.getLoc().z;
+
+		Debug.Log (current.getLoc ());
+
+		int x = (int)current.getLoc().x;
+		int z = (int)current.getLoc().z;
 
 		int max_x = nodes.GetLength(0);
 		int max_z = nodes.GetLength(1);
 
+		Debug.Log (x);
+		Debug.Log (z);
+
 		if (x-1 >= 0 && z-1 >= 0)
-			adj.Add(nodes[x-1][z-1]);
+			adj.Add(nodes[x-1,z-1]);
 
 		if (z-1 >= 0)
-			adj.Add(nodes[x][z-1]);
+			adj.Add(nodes[x,z-1]);
 
-		if (x+1 <= max_x && z-1 >= 0) 
-			adj.Add(nodes[x+1][z-1]);
+		if (x+1 < max_x && z-1 >= 0) 
+			adj.Add(nodes[x+1,z-1]);
 			
 		if (x-1 >= 0)
-			adj.Add(nodes[x-1][z]);
+			adj.Add(nodes[x-1,z]);
 			
-		if (x+1 <= max_x) 
-			adj.Add(nodes[x+1][z]);
+		if (x+1 < max_x) 
+			adj.Add(nodes[x+1,z]);
 			
-		if (x-1 >= 0 && z+1 <= max_z) 
-			adj.Add(nodes[x-1][z+1]);
+		if (x-1 >= 0 && z+1 < max_z) 
+			adj.Add(nodes[x-1,z+1]);
 			
-		if (z+1 <= max_z) 
-			adj.Add(nodes[x][z+1]);
+		if (z+1 < max_z) 
+			adj.Add(nodes[x,z+1]);
 			
-		if (x+1 <= max_x && z+1 <= max_z) 
-			adj.Add(nodes[x+1][z+1]);
-
+		if (x+1 < max_x && z+1 < max_z) 
+			adj.Add(nodes[x+1,z+1]);
+		
 		return adj;
 	}
 
 	public float heuristic_cost_estimate(NodeSquare start, NodeSquare goal){
-		float distance = Mathf.Sqrt (Mathf.Pow (goal.getLoc ().x - start.getLoc ().x, 2) + Mathf.Pow (goal.getLoc ().z - start.getLoc ().z), 2);
+		float distance = Mathf.Sqrt (Mathf.Pow (goal.getLoc ().x - start.getLoc ().x, 2) + Mathf.Pow (goal.getLoc ().z - start.getLoc ().z, 2));
 		return distance;
 	}
 
-	public NodeSquare getLowest(Dictionary<NodeSquare, float> fScore){
-		NodeSquare lowest = fScore.Keys [0];
-		foreach (NodeSquare key in fScore.Keys) {
+	public NodeSquare getLowest(Dictionary<NodeSquare, float> fScore, List<NodeSquare> openSet){
+
+		NodeSquare lowest = openSet [0];
+
+		foreach (NodeSquare key in openSet) {
 			if (fScore [key] < fScore [lowest]) {
 				lowest = key;
 			}
@@ -116,6 +135,7 @@ public class RobotController : MonoBehaviour {
 	}
 
 	public List<NodeSquare> a_star(NodeSquare start, NodeSquare goal){
+		
 		List<NodeSquare> closedSet = new List<NodeSquare> ();
 		List<NodeSquare> openSet = new List<NodeSquare> ();
 		openSet.Add (start);
@@ -124,23 +144,26 @@ public class RobotController : MonoBehaviour {
 		Dictionary<NodeSquare, float> gScore = new Dictionary<NodeSquare, float> ();
 		Dictionary<NodeSquare, float> fScore = new Dictionary<NodeSquare, float> ();
 
-		foreach (NodeSquare[] row in nodes) {
-			foreach (NodeSquare node in row) {
-				gScore.Add (node, float.MaxValue);
-				fScore.Add (node, float.MaxValue);
-			}
+		foreach (NodeSquare node in nodes) {
+
+			gScore.Add (node, float.MaxValue);
+			fScore.Add (node, float.MaxValue);
 		}
+
 		gScore [start] = 0;
 		fScore [start] = heuristic_cost_estimate (start, goal);
 
 		while (openSet.Count > 0) {
-			NodeSquare current = getLowest (fScore);
+			NodeSquare current = getLowest (fScore, openSet);
+			current.makeRobot();
+
 			if (current.Equals(goal)) {
 				return reconstruct_path (cameFrom, current);
 			}
-
+				
 			openSet.Remove (current);
 			closedSet.Add (current);
+
 			foreach (NodeSquare neighbor in adjacent(current)) {
 				if (closedSet.Contains (neighbor)) {
 					continue;
@@ -149,9 +172,9 @@ public class RobotController : MonoBehaviour {
 				float tentative_gScore = gScore [current] + 1;
 				if (!openSet.Contains (neighbor)) {
 					openSet.Add (neighbor);
-				} else if (tentative_gScore >= gScore [neighbor])
+				} else if (tentative_gScore >= gScore [neighbor]) {
 					continue;
-
+				}
 				cameFrom.Add (neighbor, current);
 				gScore [neighbor] = tentative_gScore;
 				fScore [neighbor] = gScore [neighbor] + heuristic_cost_estimate (neighbor, goal);
