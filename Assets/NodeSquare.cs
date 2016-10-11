@@ -7,6 +7,8 @@ public class NodeSquare {
 	public Vector3 node_location;
 
 	public bool isRobot = false;
+	public bool isPassable = true;
+	public bool isPath = false;
 
 	public NodeSquare(Vector3 _location, Vector3 _node_location){
 		location = _location;
@@ -37,5 +39,13 @@ public class NodeSquare {
 
 	public void demoteRobot(){
 		isRobot = false;
+	}
+
+	public void makeImpassable(){
+		isPassable = false;
+	}
+
+	public void makePath(){
+		isPath = true;
 	}
 }

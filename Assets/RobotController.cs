@@ -30,12 +30,25 @@ public class RobotController : MonoBehaviour {
 		followArrow = GameObject.FindObjectOfType<ObjectFollow> ().gameObject;
 		nodes = ObjectBuilderScript.nodes;
 
-		//List<NodeSquare> result = adjacent (nodes [0, 0]);
-		//foreach (NodeSquare node in result) {
-		//	node.makeRobot ();
-		//}
+		List<Field> obstacles = getFieldofType (3);
+		foreach (Field block in obstacles) {
+			foreach (NodeSquare node in nodes) {
+
+				//if (block.gameObject.GetComponent<BoxCollider> ().bounds.Contains (node.getRenderLoc ())) {
+				//	node.makeImpassable ();
+				//}
+
+				if (PointInOABB (node.getRenderLoc (), block.gameObject.GetComponent<BoxCollider> ())) {
+					node.makeImpassable ();
+				}
+			}
+		}
 
 		path = a_star (nodes[0,0] , nodes [49,39]);
+		foreach (NodeSquare node in path) {
+			Debug.Log (node.getLoc ());
+			node.makePath ();
+		}
 	}
 
 
@@ -60,12 +73,25 @@ public class RobotController : MonoBehaviour {
 
 	}
 
+	bool PointInOABB (Vector3 point, BoxCollider box )
+	{
+		point = box.transform.InverseTransformPoint( point ) - box.center;
+
+		float halfX = (box.size.x * 0.5f);
+		float halfY = (box.size.y * 0.5f);
+		float halfZ = (box.size.z * 0.5f);
+		if( point.x < halfX && point.x > -halfX && 
+			point.y < halfY && point.y > -halfY && 
+			point.z < halfZ && point.z > -halfZ )
+			return true;
+		else
+			return false;
+	}
+
 
 	public List<NodeSquare> reconstruct_path(Dictionary<NodeSquare, NodeSquare> cameFrom, NodeSquare current){
 		List<NodeSquare> total_path = new List<NodeSquare>();
 		total_path.Add(current);
-
-		return null;
 
 		while(cameFrom.ContainsKey(current)){
 			current = cameFrom [current];
@@ -79,40 +105,51 @@ public class RobotController : MonoBehaviour {
 	public List<NodeSquare> adjacent(NodeSquare current){
 		List<NodeSquare> adj = new List<NodeSquare>();
 
-		Debug.Log (current.getLoc ());
-
 		int x = (int)current.getLoc().x;
 		int z = (int)current.getLoc().z;
 
 		int max_x = nodes.GetLength(0);
 		int max_z = nodes.GetLength(1);
 
-		Debug.Log (x);
-		Debug.Log (z);
+		if (x - 1 >= 0 && z - 1 >= 0) {
+			if(nodes[x-1, z-1].isPassable)
+				adj.Add (nodes [x - 1, z - 1]);
+		}
 
-		if (x-1 >= 0 && z-1 >= 0)
-			adj.Add(nodes[x-1,z-1]);
+		if (z - 1 >= 0) {
+			if(nodes[x, z-1].isPassable)
+				adj.Add (nodes [x, z - 1]);
+		}
 
-		if (z-1 >= 0)
-			adj.Add(nodes[x,z-1]);
+		if (x + 1 < max_x && z - 1 >= 0) {
+			if(nodes[x+1, z-1].isPassable)
+				adj.Add (nodes [x + 1, z - 1]);
+		}
 
-		if (x+1 < max_x && z-1 >= 0) 
-			adj.Add(nodes[x+1,z-1]);
-			
-		if (x-1 >= 0)
-			adj.Add(nodes[x-1,z]);
-			
-		if (x+1 < max_x) 
-			adj.Add(nodes[x+1,z]);
-			
-		if (x-1 >= 0 && z+1 < max_z) 
-			adj.Add(nodes[x-1,z+1]);
-			
-		if (z+1 < max_z) 
-			adj.Add(nodes[x,z+1]);
-			
-		if (x+1 < max_x && z+1 < max_z) 
-			adj.Add(nodes[x+1,z+1]);
+		if (x - 1 >= 0) {
+			if(nodes[x-1, z].isPassable)
+				adj.Add (nodes [x - 1, z]);
+		}
+
+		if (x + 1 < max_x) {
+			if(nodes[x+1, z].isPassable)
+				adj.Add (nodes [x + 1, z]);
+		}
+
+		if (x - 1 >= 0 && z + 1 < max_z) {
+			if(nodes[x-1, z+1].isPassable)
+				adj.Add (nodes [x - 1, z + 1]);
+		}
+
+		if (z + 1 < max_z) {
+			if(nodes[x, z+1].isPassable)
+				adj.Add (nodes [x, z + 1]);
+		}
+
+		if (x + 1 < max_x && z + 1 < max_z) {
+			if(nodes[x+1, z+1].isPassable)
+				adj.Add (nodes [x + 1, z + 1]);
+		}
 		
 		return adj;
 	}
@@ -158,6 +195,7 @@ public class RobotController : MonoBehaviour {
 			current.makeRobot();
 
 			if (current.Equals(goal)) {
+				Debug.Log ("CATBUTT");
 				return reconstruct_path (cameFrom, current);
 			}
 				
@@ -235,9 +273,6 @@ public class RobotController : MonoBehaviour {
 			if (Physics.Raycast ( transform.position, fwd, out hitobj, 25)) {
 				Vector3 hitlocation = hitobj.point;
 				distance = Vector3.Distance (hitlocation, transform.position);
-
-				Debug.Log (" hit at "+ (360 / 16) *(i));
-
 			}
 			myContacts.Add (distance);
 			//Rotate the raycast by 22ish degrees.

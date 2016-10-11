@@ -43,14 +43,21 @@ public class ObjectBuilderScript : MonoBehaviour
 			//Gizmos.DrawWireSphere (nodes[i, j].position, .5f);
 			for (int z = 0; z < nodes.GetLength(1); z++) {
 				for (int x = 0; x < nodes.GetLength (0); x++) {
-					if (nodes [x, z].isRobot) {
+					if (!nodes [x, z].isPassable) {
+						Gizmos.color = new Color (0.0F, 0.0F, 0.0F, 0.7F);
+					}
+					else if(nodes [x, z].isPath){
+						Gizmos.color = new Color (0.0F, 0.0F, 1.0F, 0.3F);
+					}
+					else if (nodes [x, z].isRobot) {
 						Gizmos.color = new Color (1.0F, 0.0F, 0.0F, 0.3F);
-					} else {
+					} 
+					else {
 						Gizmos.color = new Color (1.0F, 0.0F, 0.0F, 0.0F);
 					}
 					Gizmos.DrawCube (nodes [x, z].getRenderLoc (), new Vector3 (1, 0.3F, 1));
 
-					Gizmos.color = new Color (0.0F, 0.0F, 0.0F, 0.2F);
+					Gizmos.color = new Color (0.0F, 0.0F, 0.0F, 0.05F);
 					Gizmos.DrawWireCube (nodes [x, z].getRenderLoc (), new Vector3 (1, 0.3F, 1));
 				}
 			}
