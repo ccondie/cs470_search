@@ -30,23 +30,44 @@ public class RobotController : MonoBehaviour {
 		followArrow = GameObject.FindObjectOfType<ObjectFollow> ().gameObject;
 		nodes = ObjectBuilderScript.nodes;
 
+		Vector3 roboLoc = myLocation ();
+		Vector3 goalLoc = GameObject.FindGameObjectWithTag("Goal").transform.position;
+		float startDist = float.MaxValue;
+		float goalDist = float.MaxValue;
+		NodeSquare start = new NodeSquare(new Vector3(0,0,0), new Vector3(0,0,0));
+		NodeSquare goal = new NodeSquare(new Vector3(0,0,0), new Vector3(0,0,0));
+
+		Debug.Log ("Pre-Calculations");
+		Debug.Log (roboLoc);
+		Debug.Log (goalLoc);
+
+		foreach (NodeSquare node in nodes) {
+			if (Vector3.Distance (node.getRenderLoc(), roboLoc) < startDist) {
+				Debug.Log ("Reassign A");
+				start = node;
+				startDist = Vector3.Distance (node.getRenderLoc (), roboLoc);
+			}
+
+			if (Vector3.Distance (node.getRenderLoc (), goalLoc) < goalDist) {
+				Debug.Log ("Reassign B");
+				goal = node;
+				goalDist = Vector3.Distance (node.getRenderLoc (), goalLoc);
+			}
+		}
+
+		// find the nodes that are impassable
 		List<Field> obstacles = getFieldofType (3);
 		foreach (Field block in obstacles) {
 			foreach (NodeSquare node in nodes) {
-
-				//if (block.gameObject.GetComponent<BoxCollider> ().bounds.Contains (node.getRenderLoc ())) {
-				//	node.makeImpassable ();
-				//}
-
 				if (PointInOABB (node.getRenderLoc (), block.gameObject.GetComponent<BoxCollider> ())) {
 					node.makeImpassable ();
 				}
 			}
 		}
 
-		path = a_star (nodes[0,0] , nodes [49,39]);
+		// calculate the path
+		path = a_star (start, goal);
 		foreach (NodeSquare node in path) {
-			Debug.Log (node.getLoc ());
 			node.makePath ();
 		}
 	}
@@ -195,7 +216,6 @@ public class RobotController : MonoBehaviour {
 			current.makeRobot();
 
 			if (current.Equals(goal)) {
-				Debug.Log ("CATBUTT");
 				return reconstruct_path (cameFrom, current);
 			}
 				
