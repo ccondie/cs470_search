@@ -52,6 +52,7 @@
      <Compile Include="Assets\ObjectBuilderScript.cs" />
      <Compile Include="Assets\ObjectFollow.cs" />
      <Compile Include="Assets\RobotController.cs" />
+     <Compile Include="Assets\RobotController2.cs" />
      <Compile Include="Assets\SubField.cs" />
      <Compile Include="Assets\Wallcounter.cs" />
      <Compile Include="Assets\cameraController.cs" />
