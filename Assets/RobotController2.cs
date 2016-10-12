@@ -29,7 +29,7 @@ public class RobotController2 : MonoBehaviour {
 		ObjectBuilderScript script = GameObject.FindObjectOfType<ObjectBuilderScript>();
 		script.BuildObject ();
 
-		followArrow = GameObject.FindObjectOfType<ObjectFollow> ().gameObject;
+		//followArrow = GameObject.FindObjectOfType<ObjectFollow> ().gameObject;
 		nodes = ObjectBuilderScript.nodes;
 
 		Vector3 roboLoc = myLocation ();
@@ -39,6 +39,7 @@ public class RobotController2 : MonoBehaviour {
 		NodeSquare start = new NodeSquare(new Vector3(0,0,0), new Vector3(0,0,0));
 		NodeSquare goal = new NodeSquare(new Vector3(0,0,0), new Vector3(0,0,0));
 
+		Debug.Log ("Begin Start/Goal Identification");
 		foreach (NodeSquare node in nodes) {
 			if (Vector3.Distance (node.getRenderLoc(), roboLoc) < startDist) {
 				start = node;
@@ -50,8 +51,10 @@ public class RobotController2 : MonoBehaviour {
 				goalDist = Vector3.Distance (node.getRenderLoc (), goalLoc);
 			}
 		}
+		Debug.Log ("Completed Start/Goal Identification");
 
 		// find the nodes that are impassable
+		Debug.Log("Begin Obstacle Identification");
 		List<Field> obstacles = getFieldofType (3);
 		foreach (Field block in obstacles) {
 			foreach (NodeSquare node in nodes) {
@@ -60,18 +63,26 @@ public class RobotController2 : MonoBehaviour {
 				}
 			}
 		}
+		Debug.Log ("Completed Obstacle Identification");
 
 		if (runtype.Equals (RunType.one)) {
 			// calculate the path uisng A*
+			Debug.Log("Begin A* Calculation");
 			path = a_star (start, goal);
+			Debug.Log ("Completed A* Calculation");
+
 			foreach (NodeSquare node in path) {
 				node.makePath ();
 			}
 			path.Reverse ();
+
 		} else if (runtype.Equals (RunType.two)) 
 		{
 			// calculate the path using RRT
+			Debug.Log("Begin RRT Calculation");
 			path = rrt(start, goal);
+			Debug.Log ("Completed RRT Calculation");
+
 			for (int i = 0; i < path.Count - 1; i++) 
 			{
 				Debug.DrawLine (path [i].getRenderLoc (), path [i + 1].getRenderLoc (), Color.blue, float.PositiveInfinity, false);
@@ -91,7 +102,7 @@ public class RobotController2 : MonoBehaviour {
 
 		// update the location of the attractive field
 		Vector3 my_pos = myLocation ();
-		Vector3 toMove = getManualInput ();
+		//Vector3 toMove = getManualInput ();
 	
 		follow_me.transform.position = path [0].getRenderLoc ();
 		float goal_dist = Vector3.Distance(follow_me.transform.position, myLocation());
@@ -105,7 +116,6 @@ public class RobotController2 : MonoBehaviour {
 		// counter the robot's velocity based on how close to the goal it is
 		float counter_speed_radius = follow_me.getRadius () * (float)0.7;
 
-		Debug.Log (goal_dist);
 		if (goal_dist < follow_me.getRadius ()) {
 			if (goal_dist < (follow_me.getRadius () / 2) && (path.Count > 1)) {
 				path [0].unmakePath ();
@@ -117,7 +127,7 @@ public class RobotController2 : MonoBehaviour {
 			
 		move (move_force);
 	
-		move (toMove);
+		//move (toMove);
 
 
 	}
@@ -284,7 +294,6 @@ public class RobotController2 : MonoBehaviour {
 			}
 		}
 		int nodeCount = nodeList.Count;
-		Debug.Log (nodeCount);
 
 		Dictionary<NodeSquare, NodeSquare> startEdges = new Dictionary<NodeSquare, NodeSquare> ();
 		HashSet<NodeSquare> startTree = new HashSet<NodeSquare> ();
@@ -294,7 +303,14 @@ public class RobotController2 : MonoBehaviour {
 		while (success == false || nodeList.Count > (nodeCount / 2)) 
 		{
 			int index = Random.Range (0, nodeList.Count);
+
 			NodeSquare rnd = nodeList [index];
+			if (!rnd.isPassable) {
+				nodeList.Remove (rnd);
+				continue;
+			}
+			Debug.Log (nodeList.Count.ToString() + rnd.getLoc().ToString());
+
 			NodeSquare nearestStart = null;
 
 			foreach (NodeSquare node in startTree) 
